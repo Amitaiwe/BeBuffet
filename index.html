@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>Be Buffet - שחק אותה כמו באפט</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#12151a;
+    --bg-elevated:#1a1e25;
+    --card:#1f242c;
+    --card-border:#2c333d;
+    --ink:#eef1f5;
+    --ink-dim:#9aa4b2;
+    --gold:#d4af6a;
+    --gold-dim:#8d7644;
+    --green:#33c07f;
+    --green-bg:rgba(51,192,127,.12);
+    --red:#e8555c;
+    --red-bg:rgba(232,85,92,.12);
+    --focus:#6fa8dc;
+    box-sizing:border-box;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; background:var(--bg); color:var(--ink);
+    font-family:'Heebo',sans-serif;
+    min-height:100%;
+    -webkit-tap-highlight-color:transparent;
+  }
+  body{
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    overflow-x:hidden;
+  }
+  ::selection{ background:var(--gold-dim); color:#fff; }
+  a{color:inherit;}
+  button{ font-family:inherit; }
+  :focus-visible{ outline:2px solid var(--focus); outline-offset:2px; }
+
+  .app{ max-width:520px; margin:0 auto; padding:0 16px 40px; }
+
+  /* ---------- Header ---------- */
+  header.top{
+    padding:22px 4px 16px;
+    border-bottom:1px solid var(--card-border);
+    margin-bottom:18px;
+  }
+  header.top h1{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:900;
+    font-size:1.55rem;
+    line-height:1.25;
+    margin:0 0 4px;
+    letter-spacing:.2px;
+  }
+  header.top h1 .sub{
+    display:block;
+    font-family:'Heebo',sans-serif;
+    font-weight:500;
+    font-size:.95rem;
+    color:var(--gold);
+    margin-top:2px;
+  }
+  .date-row{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-top:12px; font-size:.9rem; color:var(--ink-dim);
+  }
+  .date-row .date-val{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700; color:var(--ink); font-size:1.05rem;
+  }
+
+  /* ---------- Balance panel ---------- */
+  .balance-panel{
+    background:var(--bg-elevated);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:16px 18px;
+    margin-bottom:18px;
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  .balance-panel .stat-label{
+    font-size:.78rem; color:var(--ink-dim); margin-bottom:4px;
+  }
+  .balance-panel .stat-value{
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700; font-size:1.25rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .balance-panel .stat-value.warn{ color:var(--red); }
+  .balance-panel .full-row{ grid-column:1 / -1; border-top:1px solid var(--card-border); padding-top:12px; }
+  .net-worth{ font-size:1.5rem; color:var(--gold); }
+
+  /* ---------- Month summary banner ---------- */
+  .month-banner{
+    display:none;
+    border-radius:10px;
+    padding:14px 16px;
+    margin-bottom:18px;
+    font-size:.95rem;
+    line-height:1.6;
+    border:1px solid transparent;
+  }
+  .month-banner.show{ display:block; }
+  .month-banner.pos{ background:var(--green-bg); border-color:rgba(51,192,127,.35); color:var(--green); }
+  .month-banner.neg{ background:var(--red-bg); border-color:rgba(232,85,92,.35); color:var(--red); }
+  .month-banner strong{ font-family:'Frank Ruhl Libre',serif; font-size:1.05rem; }
+
+  /* ---------- Stock cards ---------- */
+  .stocks{ display:flex; flex-direction:column; gap:12px; margin-bottom:22px; }
+  .stock-card{
+    background:var(--card);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:14px 14px 12px;
+  }
+  .stock-head{
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    margin-bottom:8px;
+  }
+  .stock-name-wrap{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .ticker{
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:1.05rem;
+    color:var(--ink); white-space:nowrap;
+  }
+  .company{
+    font-size:.78rem; color:var(--ink-dim);
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;
+  }
+  .info-btn{
+    flex:0 0 auto;
+    width:26px; height:26px; border-radius:50%;
+    background:transparent; border:1px solid var(--gold-dim);
+    color:var(--gold); font-size:.85rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .info-btn:active{ background:var(--gold-dim); color:#12151a; }
+  .price-row{
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+  .price{
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:1.15rem;
+    font-variant-numeric:tabular-nums;
+  }
+  .price-label{ font-size:.75rem; color:var(--ink-dim); }
+
+  .invest-row{ display:flex; align-items:center; gap:10px; }
+  .invest-row label{ font-size:.82rem; color:var(--ink-dim); flex:0 0 auto; }
+  .invest-input-wrap{
+    position:relative; flex:1 1 auto;
+    display:flex; align-items:center;
+  }
+  .invest-input-wrap .currency{
+    position:absolute; left:12px; color:var(--ink-dim); font-size:.9rem; pointer-events:none;
+  }
+  .invest-row input[type=number]{
+    width:100%;
+    background:var(--bg);
+    border:1px solid var(--card-border);
+    border-radius:8px;
+    color:var(--ink);
+    font-family:'Heebo',sans-serif;
+    font-size:1rem;
+    font-variant-numeric:tabular-nums;
+    padding:11px 30px 11px 12px;
+    min-height:44px;
+    text-align:right;
+  }
+  .invest-row input[type=number]:focus{ border-color:var(--focus); }
+  .invest-row input.invalid{ border-color:var(--red); }
+  .shares-hint{ font-size:.72rem; color:var(--ink-dim); margin-top:6px; }
+
+  /* Tooltip / description panel */
+  .desc-panel{
+    display:none;
+    margin-top:10px;
+    padding:10px 12px;
+    background:var(--bg);
+    border:1px solid var(--card-border);
+    border-radius:8px;
+    font-size:.85rem;
+    line-height:1.6;
+    color:var(--ink-dim);
+  }
+  .desc-panel.show{ display:block; }
+
+  /* ---------- Action button ---------- */
+  .actions{ position:sticky; bottom:0; padding:14px 0 10px; background:linear-gradient(to top, var(--bg) 65%, transparent); }
+  .next-btn{
+    width:100%;
+    min-height:52px;
+    background:var(--gold);
+    color:#181206;
+    border:none;
+    border-radius:10px;
+    font-family:'Frank Ruhl Libre',serif;
+    font-weight:700;
+    font-size:1.1rem;
+    cursor:pointer;
+  }
+  .next-btn:active{ background:#c29d54; }
+  .next-btn:disabled{ opacity:.5; }
+  .invalid-msg{
+    text-align:center; color:var(--red); font-size:.82rem; margin-top:8px; min-height:1.2em;
+  }
+
+  /* ---------- Game over screen ---------- */
+  .gameover{
+    display:none;
+    text-align:center;
+    padding:40px 10px;
+  }
+  .gameover.show{ display:block; }
+  .gameover h2{
+    font-family:'Frank Ruhl Libre',serif; font-size:1.7rem; margin-bottom:8px;
+  }
+  .gameover .final-value{
+    font-size:2rem; font-weight:900; color:var(--gold);
+    font-family:'Frank Ruhl Libre',serif;
+    margin:14px 0;
+  }
+  .gameover .restart-btn{
+    margin-top:18px;
+    min-height:48px; padding:0 24px;
+    background:transparent; color:var(--ink);
+    border:1px solid var(--card-border); border-radius:10px;
+    font-size:1rem; cursor:pointer;
+  }
+
+  .loading, .error-box{
+    text-align:center; color:var(--ink-dim); padding:60px 20px; line-height:1.7;
+  }
+  .error-box{ color:var(--red); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <h1>Be Buffet
+      <span class="sub">שחק אותה כמו באפט</span>
+    </h1>
+    <div class="date-row">
+      <span>החודש הנוכחי</span>
+      <span class="date-val" id="currentDate">—</span>
+    </div>
+  </header>
+
+  <div id="loadingBox" class="loading">טוען נתוני שוק...</div>
+  <div id="errorBox" class="error-box" style="display:none;"></div>
+
+  <main id="gameRoot" style="display:none;">
+
+    <section class="balance-panel">
+      <div>
+        <div class="stat-label">מזומן זמין</div>
+        <div class="stat-value" id="cashValue">₪0</div>
+      </div>
+      <div>
+        <div class="stat-label">מושקע החודש</div>
+        <div class="stat-value" id="investedValue">₪0</div>
+      </div>
+      <div class="full-row">
+        <div class="stat-label">שווי נכסי כולל</div>
+        <div class="stat-value net-worth" id="netWorthValue">₪0</div>
+      </div>
+    </section>
+
+    <div id="monthBanner" class="month-banner"></div>
+
+    <section class="stocks" id="stocksContainer"></section>
+
+    <div class="actions">
+      <button class="next-btn" id="nextMonthBtn">חודש הבא ←</button>
+      <div class="invalid-msg" id="invalidMsg"></div>
+    </div>
+
+  </main>
+
+  <div id="gameOverScreen" class="gameover">
+    <h2>המשחק הסתיים</h2>
+    <p>הגעת לחודש האחרון בנתונים. הנה שווי הנכסים הסופי שלך:</p>
+    <div class="final-value" id="finalValue">₪0</div>
+    <button class="restart-btn" id="restartBtn">התחל מחדש</button>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- Hardcoded Hebrew company descriptions ----------
+  var DESCRIPTIONS = {
+    "NVDA": "יצרנית שבבי גרפיקה (GPU) מובילה, המניעה כיום גם את תחום הבינה המלאכותית ומרכזי הנתונים ברחבי העולם.",
+    "META": "חברת האם של פייסבוק, אינסטגרם ווואטסאפ. משקיעה רבות בפרסום דיגיטלי, מציאות מדומה ובינה מלאכותית.",
+    "INTC": "אחת מיצרניות המעבדים הוותיקות והגדולות בעולם, עברה בשנים האחרונות תהליך התאוששות ומיקוד מחדש.",
+    "BRK-B": "חברת האחזקות של וורן באפט. מחזיקה במגוון רחב של עסקים וחברות ציבוריות בתחומי ביטוח, תעשייה וצריכה.",
+    "SMCI": "יצרנית שרתים ותשתיות מחשוב עתירות ביצועים, נהנית מהביקוש הגובר לתשתיות בינה מלאכותית.",
+    "TPL": "חברה המחזיקה קרקעות נרחבות בטקסס וגובה תמלוגים על נפט וגז המופקים מהן, ללא צורך בקידוח בעצמה.",
+    "INVZ": "חברה ישראלית המפתחת חיישני LiDAR לרכבים אוטונומיים ומערכות בטיחות מתקדמות.",
+    "SPY": "קרן סל (ETF) העוקבת אחר מדד ה-S&P 500, ומהווה למעשה השקעה מפוזרת ב-500 החברות הגדולות בארה\"ב.",
+    "AAPL": "יצרנית האייפון, האייפד והמק. אחת החברות הגדולות בעולם עם מותג צרכני חזק ואקוסיסטם סגור.",
+    "MSFT": "ענקית תוכנה המפעילה את Windows, Office וענן Azure, ומשקיעה רבות בתחום הבינה המלאכותית."
+  };
+
+  var STARTING_CASH = 100000;
+  var STOCKS_PER_TURN = 5;
+
+  var state = {
+    data: null,           // parsed market_data.json
+    monthIndex: 0,        // index into data.dates
+    cash: STARTING_CASH,
+    currentPicks: [],      // array of ticker strings shown this turn
+    investments: {}        // ticker -> amount typed in (number)
+  };
+
+  var els = {};
+
+  function fmtMoney(n){
+    var sign = n < 0 ? "-" : "";
+    n = Math.abs(Math.round(n));
+    return sign + "₪" + n.toLocaleString("he-IL");
+  }
+
+  function hebrewMonth(dateKey){
+    var months = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+    var parts = dateKey.split("-");
+    var y = parts[0], m = parseInt(parts[1],10) - 1;
+    return months[m] + " " + y;
+  }
+
+  // Deterministic-ish shuffle seeded by month index so a given month always
+  // offers a consistent (but still varied-looking) set across a playthrough.
+  function pickRandomTickers(allTickers, count, seed){
+    var arr = allTickers.slice();
+    var rand = mulberry32(seed);
+    for (var i = arr.length - 1; i > 0; i--){
+      var j = Math.floor(rand() * (i + 1));
+      var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+    }
+    return arr.slice(0, count);
+  }
+
+  function mulberry32(a){
+    return function(){
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function priceAt(ticker, monthIdx){
+    var arr = state.data.stocks[ticker].prices;
+    return arr[monthIdx];
+  }
+
+  function availableTickersForMonth(monthIdx){
+    // A stock is eligible if it has a non-null price this month AND next month
+    // (so a purchase can actually be resolved into next month).
+    var out = [];
+    var tickers = Object.keys(state.data.stocks);
+    for (var i=0;i<tickers.length;i++){
+      var t = tickers[i];
+      var p = priceAt(t, monthIdx);
+      if (p !== null && p !== undefined) out.push(t);
+    }
+    return out;
+  }
+
+  function startNewTurn(){
+    var elig = availableTickersForMonth(state.monthIndex);
+    var count = Math.min(STOCKS_PER_TURN, elig.length);
+    state.currentPicks = pickRandomTickers(elig, count, state.monthIndex + 1);
+    state.investments = {};
+    state.currentPicks.forEach(function(t){ state.investments[t] = 0; });
+    renderTurn();
+  }
+
+  function renderTurn(){
+    els.currentDate.textContent = hebrewMonth(state.data.dates[state.monthIndex]);
+    els.monthBanner.className = "month-banner";
+    els.monthBanner.innerHTML = "";
+
+    els.stocksContainer.innerHTML = "";
+    state.currentPicks.forEach(function(ticker){
+      els.stocksContainer.appendChild(buildStockCard(ticker));
+    });
+
+    updateBalances();
+    updateInvalidState();
+  }
+
+  function buildStockCard(ticker){
+    var info = state.data.stocks[ticker];
+    var price = priceAt(ticker, state.monthIndex);
+
+    var card = document.createElement("div");
+    card.className = "stock-card";
+    card.innerHTML =
+      '<div class="stock-head">' +
+        '<div class="stock-name-wrap">' +
+          '<span class="ticker">' + ticker + '</span>' +
+          '<span class="company">' + escapeHtml(info.name || "") + '</span>' +
+        '</div>' +
+        '<button class="info-btn" type="button" aria-label="מידע על ' + ticker + '">?</button>' +
+      '</div>' +
+      '<div class="price-row">' +
+        '<span class="price-label">מחיר נוכחי למניה</span>' +
+        '<span class="price">' + fmtMoney(price) + '</span>' +
+      '</div>' +
+      '<div class="invest-row">' +
+        '<label for="inv-' + ticker + '">השקעה</label>' +
+        '<div class="invest-input-wrap">' +
+          '<input type="number" min="0" step="1" inputmode="numeric" id="inv-' + ticker + '" data-ticker="' + ticker + '" placeholder="0">' +
+        '</div>' +
+      '</div>' +
+      '<div class="shares-hint" id="shares-' + ticker + '">0 מניות</div>' +
+      '<div class="desc-panel" id="desc-' + ticker + '">' + escapeHtml(DESCRIPTIONS[ticker] || "אין מידע זמין על חברה זו.") + '</div>';
+
+    var infoBtn = card.querySelector(".info-btn");
+    var descPanel = card.querySelector("#desc-" + cssEscape(ticker));
+    infoBtn.addEventListener("click", function(){
+      descPanel.classList.toggle("show");
+    });
+
+    var input = card.querySelector("input");
+    input.addEventListener("input", function(){
+      onInvestmentChange(ticker, input);
+    });
+
+    return card;
+  }
+
+  function cssEscape(s){ return s.replace(/[^a-zA-Z0-9_-]/g, "_"); }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  function onInvestmentChange(ticker, inputEl){
+    var raw = inputEl.value;
+    var val = parseFloat(raw);
+    if (isNaN(val) || val < 0) val = 0;
+    state.investments[ticker] = val;
+
+    var price = priceAt(ticker, state.monthIndex);
+    var sharesHint = document.getElementById("shares-" + ticker);
+    if (sharesHint){
+      var shares = price > 0 ? (val / price) : 0;
+      sharesHint.textContent = shares.toLocaleString("he-IL", {maximumFractionDigits:3}) + " מניות";
+    }
+
+    updateBalances();
+    updateInvalidState();
+  }
+
+  function totalInvested(){
+    var sum = 0;
+    Object.keys(state.investments).forEach(function(t){ sum += (state.investments[t] || 0); });
+    return sum;
+  }
+
+  function updateBalances(){
+    var invested = totalInvested();
+    var remaining = state.cash - invested;
+    els.cashValue.textContent = fmtMoney(remaining);
+    els.cashValue.classList.toggle("warn", remaining < 0);
+    els.investedValue.textContent = fmtMoney(invested);
+    els.netWorthValue.textContent = fmtMoney(state.cash); // cash+invested == total this turn (positions valued at cost until resolved)
+  }
+
+  function updateInvalidState(){
+    var invested = totalInvested();
+    var over = invested > state.cash;
+    els.nextMonthBtn.disabled = over;
+    els.invalidMsg.textContent = over ? "סכום ההשקעה חורג מהיתרה הזמינה" : "";
+
+    state.currentPicks.forEach(function(t){
+      var input = document.getElementById("inv-" + t);
+      if (input) input.classList.toggle("invalid", over && state.investments[t] > 0);
+    });
+  }
+
+  function goToNextMonth(){
+    var invested = totalInvested();
+    if (invested > state.cash) return; // guarded by disabled button too
+
+    var nextIdx = state.monthIndex + 1;
+    if (nextIdx >= state.data.dates.length){
+      endGame();
+      return;
+    }
+
+    var startCash = state.cash;
+    var pnl = 0;
+    var breakdown = [];
+
+    state.currentPicks.forEach(function(ticker){
+      var amount = state.investments[ticker] || 0;
+      if (amount <= 0) return;
+      var buyPrice = priceAt(ticker, state.monthIndex);
+      var sellPrice = priceAt(ticker, nextIdx);
+      var shares = amount / buyPrice;
+      var soldValue;
+      if (sellPrice === null || sellPrice === undefined){
+        // Stock delisted / no data next month: treat as unchanged value (safety fallback)
+        soldValue = amount;
+      } else {
+        soldValue = shares * sellPrice;
+      }
+      var diff = soldValue - amount;
+      pnl += diff;
+      breakdown.push({ticker:ticker, diff:diff, pct: amount>0 ? (diff/amount*100) : 0});
+    });
+
+    state.cash = startCash - invested + invested + pnl; // == startCash + pnl (invested amounts return as sold value)
+    state.cash = round2(state.cash);
+
+    showMonthBanner(pnl, breakdown);
+
+    state.monthIndex = nextIdx;
+    startNewTurn();
+    window.scrollTo({top:0, behavior:"smooth"});
+  }
+
+  function round2(n){ return Math.round(n * 100) / 100; }
+
+  function showMonthBanner(pnl, breakdown){
+    var positive = pnl >= 0;
+    els.monthBanner.className = "month-banner show " + (positive ? "pos" : "neg");
+    var sign = positive ? "+" : "";
+    var html = '<strong>' + (positive ? "רווח" : "הפסד") + ' חודשי: ' + sign + fmtMoney(pnl) + '</strong>';
+    if (breakdown.length){
+      html += '<div style="margin-top:6px; font-size:.85rem; opacity:.9;">' +
+        breakdown.map(function(b){
+          var s = b.diff >= 0 ? "+" : "";
+          return b.ticker + ": " + s + fmtMoney(b.diff);
+        }).join(" · ") +
+      '</div>';
+    } else {
+      html += '<div style="margin-top:6px; font-size:.85rem; opacity:.9;">לא בוצעה השקעה החודש</div>';
+    }
+    els.monthBanner.innerHTML = html;
+  }
+
+  function endGame(){
+    document.getElementById("gameRoot").style.display = "none";
+    els.gameOverScreen.classList.add("show");
+    els.finalValue.textContent = fmtMoney(state.cash);
+  }
+
+  function restartGame(){
+    state.monthIndex = 0;
+    state.cash = STARTING_CASH;
+    els.gameOverScreen.classList.remove("show");
+    document.getElementById("gameRoot").style.display = "block";
+    startNewTurn();
+  }
+
+  function cacheEls(){
+    els.currentDate = document.getElementById("currentDate");
+    els.cashValue = document.getElementById("cashValue");
+    els.investedValue = document.getElementById("investedValue");
+    els.netWorthValue = document.getElementById("netWorthValue");
+    els.monthBanner = document.getElementById("monthBanner");
+    els.stocksContainer = document.getElementById("stocksContainer");
+    els.nextMonthBtn = document.getElementById("nextMonthBtn");
+    els.invalidMsg = document.getElementById("invalidMsg");
+    els.gameOverScreen = document.getElementById("gameOverScreen");
+    els.finalValue = document.getElementById("finalValue");
+  }
+
+  function init(){
+    cacheEls();
+    els.nextMonthBtn.addEventListener("click", goToNextMonth);
+    document.getElementById("restartBtn").addEventListener("click", restartGame);
+
+    fetch("market_data.json")
+      .then(function(res){
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function(json){
+        if (!json.dates || !json.stocks || json.dates.length < 2){
+          throw new Error("market_data.json אינו תקין או חסר נתונים מספיקים");
+        }
+        state.data = json;
+        document.getElementById("loadingBox").style.display = "none";
+        document.getElementById("gameRoot").style.display = "block";
+        startNewTurn();
+      })
+      .catch(function(err){
+        document.getElementById("loadingBox").style.display = "none";
+        var box = document.getElementById("errorBox");
+        box.style.display = "block";
+        box.textContent = "שגיאה בטעינת נתוני השוק (market_data.json): " + err.message +
+          ". ודא שהקובץ נמצא באותה תיקייה כמו קובץ ה-HTML.";
+      });
+  }
+
+  document.addEventListener("DOMContentLoaded", init);
+})();
+</script>
+</body>
+</html>
