@@ -152,31 +152,57 @@
   }
   .price-label{ font-size:.75rem; color:var(--ink-dim); }
 
-  .invest-row{ display:flex; align-items:center; gap:10px; }
-  .invest-row label{ font-size:.82rem; color:var(--ink-dim); flex:0 0 auto; }
-  .invest-input-wrap{
-    position:relative; flex:1 1 auto;
-    display:flex; align-items:center;
+  .invest-row{ display:flex; flex-direction:column; gap:6px; }
+  .invest-row .invest-row-head{
+    display:flex; align-items:baseline; justify-content:space-between;
   }
-  .invest-input-wrap .currency{
-    position:absolute; left:12px; color:var(--ink-dim); font-size:.9rem; pointer-events:none;
+  .invest-row label{ font-size:.82rem; color:var(--ink-dim); }
+  .pct-value{
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; color:var(--gold);
+    font-size:.95rem; font-variant-numeric:tabular-nums;
   }
-  .invest-row input[type=number]{
-    width:100%;
-    background:var(--bg);
-    border:1px solid var(--card-border);
-    border-radius:8px;
-    color:var(--ink);
-    font-family:'Heebo',sans-serif;
-    font-size:1rem;
+  .invest-row input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:32px;
+    background:transparent;
+    margin:0;
+    cursor:pointer;
+    touch-action:pan-y;
+  }
+  .invest-row input[type=range]::-webkit-slider-runnable-track{
+    height:8px; border-radius:6px;
+    background:linear-gradient(to left, var(--gold) 0%, var(--gold) var(--fill,0%), var(--card-border) var(--fill,0%), var(--card-border) 100%);
+  }
+  .invest-row input[type=range]::-moz-range-track{
+    height:8px; border-radius:6px; background:var(--card-border);
+  }
+  .invest-row input[type=range]::-moz-range-progress{
+    height:8px; border-radius:6px; background:var(--gold);
+  }
+  .invest-row input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--gold);
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--gold-dim);
+    margin-top:-9px;
+  }
+  .invest-row input[type=range]::-moz-range-thumb{
+    width:26px; height:26px; border-radius:50%;
+    background:var(--gold);
+    border:3px solid var(--bg);
+    box-shadow:0 0 0 1px var(--gold-dim);
+  }
+  .invest-row.invalid input[type=range]::-webkit-slider-thumb{ box-shadow:0 0 0 1px var(--red); }
+  .invest-amount-row{
+    display:flex; justify-content:space-between; align-items:center;
+    font-size:.82rem; color:var(--ink-dim); margin-top:2px;
+  }
+  .invest-amount-row .amount{
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; color:var(--ink); font-size:.95rem;
     font-variant-numeric:tabular-nums;
-    padding:11px 30px 11px 12px;
-    min-height:44px;
-    text-align:right;
   }
-  .invest-row input[type=number]:focus{ border-color:var(--focus); }
-  .invest-row input.invalid{ border-color:var(--red); }
-  .shares-hint{ font-size:.72rem; color:var(--ink-dim); margin-top:6px; }
+  .shares-hint{ font-size:.72rem; color:var(--ink-dim); margin-top:2px; }
 
   /* Tooltip / description panel */
   .desc-panel{
@@ -235,6 +261,24 @@
     font-size:1rem; cursor:pointer;
   }
 
+  /* ---------- Progress chart ---------- */
+  .chart-section{
+    background:var(--bg-elevated);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:14px 16px 10px;
+    margin-bottom:22px;
+  }
+  .chart-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:.82rem; color:var(--ink-dim); margin-bottom:8px;
+  }
+  .chart-head .chart-current{
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; color:var(--gold); font-size:1rem;
+  }
+  #chartContainer svg{ display:block; width:100%; height:auto; }
+  #chartContainer .axis-label{ font-size:9px; fill:var(--ink-dim); font-family:'Heebo',sans-serif; }
+
   .loading, .error-box{
     text-align:center; color:var(--ink-dim); padding:60px 20px; line-height:1.7;
   }
@@ -278,6 +322,14 @@
 
     <section class="stocks" id="stocksContainer"></section>
 
+    <section class="chart-section">
+      <div class="chart-head">
+        <span>התקדמות שווי הנכסים</span>
+        <span class="chart-current" id="chartCurrentValue">₪0</span>
+      </div>
+      <div id="chartContainer"></div>
+    </section>
+
     <div class="actions">
       <button class="next-btn" id="nextMonthBtn">חודש הבא ←</button>
       <div class="invalid-msg" id="invalidMsg"></div>
@@ -309,7 +361,72 @@
     "INVZ": "חברה ישראלית המפתחת חיישני LiDAR לרכבים אוטונומיים ומערכות בטיחות מתקדמות.",
     "SPY": "קרן סל (ETF) העוקבת אחר מדד ה-S&P 500, ומהווה למעשה השקעה מפוזרת ב-500 החברות הגדולות בארה\"ב.",
     "AAPL": "יצרנית האייפון, האייפד והמק. אחת החברות הגדולות בעולם עם מותג צרכני חזק ואקוסיסטם סגור.",
-    "MSFT": "ענקית תוכנה המפעילה את Windows, Office וענן Azure, ומשקיעה רבות בתחום הבינה המלאכותית."
+    "MSFT": "ענקית תוכנה המפעילה את Windows, Office וענן Azure, ומשקיעה רבות בתחום הבינה המלאכותית.",
+    "GOOGL": "חברת האם של גוגל. מפעילה את מנוע החיפוש המוביל בעולם, יוטיוב, אנדרואיד ומחקר בינה מלאכותית מתקדם.",
+    "AMZN": "ענקית מסחר אלקטרוני עולמית, ומחזיקה גם ב-AWS - ספקית שירותי הענן הגדולה בעולם.",
+    "TSLA": "יצרנית כלי רכב חשמליים ומערכות אנרגיה, ומפתחת גם טכנולוגיית נהיגה אוטונומית.",
+    "AVGO": "יצרנית שבבים ותוכנות תשתית לרשתות תקשורת, מרכזי נתונים ובינה מלאכותית.",
+    "LLY": "חברת תרופות אמריקאית מהגדולות בעולם, מובילה בתחום תרופות הסוכרת וההשמנה.",
+    "JPM": "הבנק הגדול בארה\"ב, פעיל בבנקאות מסחרית, השקעות וניהול נכסים.",
+    "V": "חברת התשלומים הגדולה בעולם, מפעילה את רשת כרטיסי האשראי הנפוצה ביותר.",
+    "UNH": "חברת ביטוח ושירותי בריאות אמריקאית מהגדולות בעולם.",
+    "XOM": "אחת מחברות הנפט והגז הגדולות בעולם, עוסקת בהפקה, זיקוק ושיווק דלקים.",
+    "MA": "חברת תשלומים גלובלית המפעילה רשת כרטיסי אשראי וחיוב מובילה.",
+    "HD": "רשת חנויות השיפוצים וכלי הבית הגדולה בארה\"ב.",
+    "PG": "ענקית מוצרי צריכה עם מותגים כמו Gillette, Pampers ו-Ariel.",
+    "COST": "רשת מועדוני קמעונאות בסיטונאות עם דמי חברות ומחירים נמוכים.",
+    "JNJ": "חברת תרופות וציוד רפואי גלובלית עם מוצרי צריכה מוכרים.",
+    "MRK": "חברת תרופות אמריקאית מובילה בתחומי אונקולוגיה וחיסונים.",
+    "ABBV": "חברת ביוטק ותרופות, מוכרת בעיקר בזכות התרופה Humira ותחליפיה.",
+    "ORCL": "חברת תוכנה וענן המספקת מסדי נתונים ומערכות ארגוניות לעסקים גדולים.",
+    "CVX": "חברת אנרגיה אמריקאית גדולה, עוסקת בהפקת נפט וגז ברחבי העולם.",
+    "BAC": "אחד הבנקים הגדולים בארה\"ב, עם שירותי בנקאות פרטית ומסחרית.",
+    "KO": "חברת המשקאות הגדולה בעולם עם מותג הקולה המוכר ביותר.",
+    "PEP": "חברת משקאות וחטיפים גלובלית, כוללת את מותגי פפסי ולייז.",
+    "ADBE": "חברת תוכנה המפתחת כלים ליצירה ועריכה כמו Photoshop ו-Acrobat.",
+    "CRM": "חברת תוכנת ענן מובילה לניהול קשרי לקוחות (CRM) לעסקים.",
+    "NFLX": "שירות הזרמת הווידאו הגדול בעולם עם תוכן מקורי ובינלאומי.",
+    "AMD": "יצרנית מעבדים ושבבי גרפיקה, מתחרה מרכזית של אינטל ואנבידיה.",
+    "TMO": "חברה המספקת ציוד ושירותים למעבדות מדע ורפואה.",
+    "ACN": "חברת ייעוץ עסקי וטכנולוגי גלובלית עם פעילות בעשרות מדינות.",
+    "LIN": "חברת גזים תעשייתיים גלובלית המספקת חמצן, מימן וגזים נוספים לתעשייה.",
+    "MCD": "רשת מסעדות המזון המהיר הגדולה והמוכרת בעולם.",
+    "CSCO": "חברת ציוד תקשורת ורשתות מחשבים, מהמובילות בתחום התשתיות הדיגיטליות.",
+    "ABT": "חברת ציוד ומכשור רפואי וטיפוח בריאות גלובלית.",
+    "WMT": "רשת הקמעונאות הגדולה בעולם עם אלפי סניפים ומכירות מקוונות.",
+    "DIS": "חברת בידור ותקשורת עם פארקי שעשועים, אולפני קולנוע ושירותי סטרימינג.",
+    "TXN": "יצרנית שבבים אנלוגיים ומעגלים משולבים לתעשיות רבות.",
+    "PM": "חברת טבק גלובלית המוכרת מוצרי עישון ומוצרים חלופיים.",
+    "NKE": "חברת הנעלה וביגוד ספורט מהמותגים המוכרים בעולם.",
+    "QCOM": "חברת שבבים המתמחה בטכנולוגיית תקשורת סלולרית ושבבים לסמארטפונים.",
+    "IBM": "חברת טכנולוגיה ותיקה בתחומי ענן, בינה מלאכותית ומחשוב ארגוני.",
+    "GE": "קונצרן תעשייתי אמריקאי הפעיל בתחומי תעופה ואנרגיה.",
+    "CAT": "יצרנית ציוד כבד לבנייה וכרייה, מהגדולות בעולם בתחומה.",
+    "UPS": "חברת שילוח ולוגיסטיקה גלובלית המובילה משלוחים ברחבי העולם.",
+    "BA": "יצרנית מטוסים אזרחיים וצבאיים אמריקאית מהגדולות בעולם.",
+    "HON": "קונצרן תעשייתי המייצר מערכות אוטומציה, תעופה ובקרה.",
+    "AMGN": "חברת ביוטכנולוגיה המפתחת תרופות לטיפול במחלות קשות כמו סרטן ואוסטאופורוזיס.",
+    "SBUX": "רשת בתי הקפה הגדולה בעולם עם אלפי סניפים במדינות רבות.",
+    "GS": "בנק השקעות אמריקאי מוביל בתחומי מסחר, ייעוץ וניהול נכסים.",
+    "MS": "בנק השקעות וניהול הון גלובלי, מהגדולים בוול סטריט.",
+    "BLK": "חברת ניהול הנכסים הגדולה בעולם, מפעילה את קרנות ה-iShares.",
+    "LOW": "רשת חנויות שיפוצים וכלי בית אמריקאית, מתחרה מרכזית של Home Depot.",
+    "SPGI": "חברה המספקת דירוגי אשראי, מדדים ונתונים פיננסיים לשווקים.",
+    "INTU": "חברת תוכנה פיננסית המפתחת את TurboTax ו-QuickBooks.",
+    "DE": "יצרנית ציוד וטרקטורים חקלאיים מובילה בעולם (John Deere).",
+    "PLD": "קרן השקעות בנדל\"ן (REIT) המתמחה במחסנים ומרכזי לוגיסטיקה.",
+    "BKNG": "חברת האם של Booking.com, מפעילה אתרי הזמנות נסיעות ומלונות.",
+    "ADP": "חברה המספקת שירותי שכר וניהול משאבי אנוש לעסקים.",
+    "MDT": "חברת ציוד רפואי גלובלית המתמחה במכשור לב וניתוחים.",
+    "GILD": "חברת ביוטכנולוגיה המתמחה בתרופות לאיידס, הפטיטיס וקורונה.",
+    "CVS": "רשת בתי מרקחת וביטוח בריאות אמריקאית ענקית.",
+    "T": "חברת תקשורת אמריקאית המספקת שירותי טלפון, אינטרנט וסלולר.",
+    "VZ": "חברת תקשורת וסלולר אמריקאית מהגדולות בשוק.",
+    "SO": "חברת חשמל ואנרגיה אמריקאית המספקת שירותי תשתית לדרום ארה\"ב.",
+    "DUK": "חברת חשמל ואנרגיה אמריקאית המספקת שירותים למיליוני לקוחות.",
+    "QQQ": "קרן סל (ETF) העוקבת אחר מדד הנאסד\"ק 100, ריכוז של חברות הטכנולוגיה הגדולות בארה\"ב.",
+    "PYPL": "פלטפורמת תשלומים דיגיטלית עולמית המאפשרת העברות כספים מקוונות.",
+    "COP": "חברת אנרגיה אמריקאית העוסקת בחיפוש והפקת נפט וגז."
   };
 
   var STARTING_CASH = 100000;
@@ -319,8 +436,10 @@
     data: null,           // parsed market_data.json
     monthIndex: 0,        // index into data.dates
     cash: STARTING_CASH,
+    turnBaseCash: STARTING_CASH, // cash balance frozen at the start of the current turn (slider 0-100% basis)
     currentPicks: [],      // array of ticker strings shown this turn
-    investments: {}        // ticker -> amount typed in (number)
+    investments: {},       // ticker -> allocated amount (derived from slider %)
+    history: [{ label: null, value: STARTING_CASH }] // net worth over time, for the chart
   };
 
   var els = {};
@@ -382,7 +501,11 @@
     var count = Math.min(STOCKS_PER_TURN, elig.length);
     state.currentPicks = pickRandomTickers(elig, count, state.monthIndex + 1);
     state.investments = {};
+    state.turnBaseCash = state.cash;
     state.currentPicks.forEach(function(t){ state.investments[t] = 0; });
+    if (state.history[state.history.length - 1].label === null){
+      state.history[state.history.length - 1].label = state.data.dates[state.monthIndex];
+    }
     renderTurn();
   }
 
@@ -398,6 +521,7 @@
 
     updateBalances();
     updateInvalidState();
+    renderChart();
   }
 
   function buildStockCard(ticker){
@@ -418,13 +542,17 @@
         '<span class="price-label">מחיר נוכחי למניה</span>' +
         '<span class="price">' + fmtMoney(price) + '</span>' +
       '</div>' +
-      '<div class="invest-row">' +
-        '<label for="inv-' + ticker + '">השקעה</label>' +
-        '<div class="invest-input-wrap">' +
-          '<input type="number" min="0" step="1" inputmode="numeric" id="inv-' + ticker + '" data-ticker="' + ticker + '" placeholder="0">' +
+      '<div class="invest-row" id="row-' + ticker + '">' +
+        '<div class="invest-row-head">' +
+          '<label for="inv-' + ticker + '">השקעה מהתיק</label>' +
+          '<span class="pct-value" id="pct-' + ticker + '">0%</span>' +
+        '</div>' +
+        '<input type="range" min="0" max="100" step="1" value="0" id="inv-' + ticker + '" data-ticker="' + ticker + '">' +
+        '<div class="invest-amount-row">' +
+          '<span id="shares-' + ticker + '">0 מניות</span>' +
+          '<span class="amount" id="amt-' + ticker + '">₪0</span>' +
         '</div>' +
       '</div>' +
-      '<div class="shares-hint" id="shares-' + ticker + '">0 מניות</div>' +
       '<div class="desc-panel" id="desc-' + ticker + '">' + escapeHtml(DESCRIPTIONS[ticker] || "אין מידע זמין על חברה זו.") + '</div>';
 
     var infoBtn = card.querySelector(".info-btn");
@@ -433,9 +561,9 @@
       descPanel.classList.toggle("show");
     });
 
-    var input = card.querySelector("input");
-    input.addEventListener("input", function(){
-      onInvestmentChange(ticker, input);
+    var slider = card.querySelector("input[type=range]");
+    slider.addEventListener("input", function(){
+      onSliderChange(ticker, slider);
     });
 
     return card;
@@ -448,16 +576,28 @@
     });
   }
 
-  function onInvestmentChange(ticker, inputEl){
-    var raw = inputEl.value;
-    var val = parseFloat(raw);
-    if (isNaN(val) || val < 0) val = 0;
-    state.investments[ticker] = val;
+  function onSliderChange(ticker, sliderEl){
+    var pct = parseFloat(sliderEl.value);
+    if (isNaN(pct) || pct < 0) pct = 0;
+    if (pct > 100) pct = 100;
+
+    // Percentage is of the portfolio value at the start of THIS turn (state.turnBaseCash),
+    // which stays fixed while the player adjusts sliders mid-turn.
+    var amount = round2((pct / 100) * state.turnBaseCash);
+    state.investments[ticker] = amount;
+
+    sliderEl.style.setProperty("--fill", pct + "%");
+
+    var pctLabel = document.getElementById("pct-" + ticker);
+    if (pctLabel) pctLabel.textContent = pct + "%";
+
+    var amtLabel = document.getElementById("amt-" + ticker);
+    if (amtLabel) amtLabel.textContent = fmtMoney(amount);
 
     var price = priceAt(ticker, state.monthIndex);
     var sharesHint = document.getElementById("shares-" + ticker);
     if (sharesHint){
-      var shares = price > 0 ? (val / price) : 0;
+      var shares = price > 0 ? (amount / price) : 0;
       sharesHint.textContent = shares.toLocaleString("he-IL", {maximumFractionDigits:3}) + " מניות";
     }
 
@@ -487,8 +627,8 @@
     els.invalidMsg.textContent = over ? "סכום ההשקעה חורג מהיתרה הזמינה" : "";
 
     state.currentPicks.forEach(function(t){
-      var input = document.getElementById("inv-" + t);
-      if (input) input.classList.toggle("invalid", over && state.investments[t] > 0);
+      var row = document.getElementById("row-" + t);
+      if (row) row.classList.toggle("invalid", over && state.investments[t] > 0);
     });
   }
 
@@ -527,7 +667,10 @@
     state.cash = startCash - invested + invested + pnl; // == startCash + pnl (invested amounts return as sold value)
     state.cash = round2(state.cash);
 
-    showMonthBanner(pnl, breakdown);
+    var pnlPct = startCash > 0 ? (pnl / startCash * 100) : 0;
+    showMonthBanner(pnl, pnlPct, breakdown);
+
+    state.history.push({ label: state.data.dates[nextIdx], value: state.cash });
 
     state.monthIndex = nextIdx;
     startNewTurn();
@@ -536,11 +679,12 @@
 
   function round2(n){ return Math.round(n * 100) / 100; }
 
-  function showMonthBanner(pnl, breakdown){
+  function showMonthBanner(pnl, pnlPct, breakdown){
     var positive = pnl >= 0;
     els.monthBanner.className = "month-banner show " + (positive ? "pos" : "neg");
     var sign = positive ? "+" : "";
-    var html = '<strong>' + (positive ? "רווח" : "הפסד") + ' חודשי: ' + sign + fmtMoney(pnl) + '</strong>';
+    var pctText = sign + pnlPct.toLocaleString("he-IL", {maximumFractionDigits:2}) + "%";
+    var html = '<strong>' + (positive ? "רווח" : "הפסד") + ' חודשי: ' + sign + fmtMoney(pnl) + ' (' + pctText + ')</strong>';
     if (breakdown.length){
       html += '<div style="margin-top:6px; font-size:.85rem; opacity:.9;">' +
         breakdown.map(function(b){
@@ -563,6 +707,8 @@
   function restartGame(){
     state.monthIndex = 0;
     state.cash = STARTING_CASH;
+    state.turnBaseCash = STARTING_CASH;
+    state.history = [{ label: null, value: STARTING_CASH }];
     els.gameOverScreen.classList.remove("show");
     document.getElementById("gameRoot").style.display = "block";
     startNewTurn();
@@ -579,6 +725,51 @@
     els.invalidMsg = document.getElementById("invalidMsg");
     els.gameOverScreen = document.getElementById("gameOverScreen");
     els.finalValue = document.getElementById("finalValue");
+    els.chartContainer = document.getElementById("chartContainer");
+    els.chartCurrentValue = document.getElementById("chartCurrentValue");
+  }
+
+  function renderChart(){
+    if (!els.chartContainer) return;
+    els.chartCurrentValue.textContent = fmtMoney(state.cash);
+
+    var points = state.history;
+    if (points.length < 2){
+      els.chartContainer.innerHTML =
+        '<div style="padding:20px 0; text-align:center; color:var(--ink-dim); font-size:.85rem;">' +
+        'הגרף יופיע לאחר החודש הראשון' + '</div>';
+      return;
+    }
+
+    var w = 480, h = 150, padL = 8, padR = 8, padT = 10, padB = 18;
+    var values = points.map(function(p){ return p.value; });
+    var min = Math.min.apply(null, values);
+    var max = Math.max.apply(null, values);
+    if (min === max){ min -= 1; max += 1; }
+
+    function x(i){ return padL + (i / (points.length - 1)) * (w - padL - padR); }
+    function y(v){ return padT + (1 - (v - min) / (max - min)) * (h - padT - padB); }
+
+    var linePts = points.map(function(p, i){ return x(i) + "," + y(p.value); }).join(" ");
+    var areaPts = linePts + " " + x(points.length - 1) + "," + (h - padB) + " " + x(0) + "," + (h - padB);
+
+    var last = points[points.length - 1];
+    var first = points[0];
+    var lastX = x(points.length - 1), lastY = y(last.value);
+    var dotColor = last.value >= STARTING_CASH ? "var(--green)" : "var(--red)";
+
+    var svg =
+      '<svg viewBox="0 0 ' + w + ' ' + h + '" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">' +
+        '<line x1="' + padL + '" y1="' + y(STARTING_CASH) + '" x2="' + (w - padR) + '" y2="' + y(STARTING_CASH) +
+          '" stroke="var(--card-border)" stroke-width="1" stroke-dasharray="4 4"/>' +
+        '<polygon points="' + areaPts + '" fill="var(--gold)" opacity="0.12"/>' +
+        '<polyline points="' + linePts + '" fill="none" stroke="var(--gold)" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>' +
+        '<circle cx="' + lastX + '" cy="' + lastY + '" r="4" fill="' + dotColor + '" stroke="var(--bg)" stroke-width="1.5"/>' +
+        '<text class="axis-label" x="' + padL + '" y="' + (h - 4) + '" text-anchor="start">' + (first.label ? hebrewMonth(first.label) : "") + '</text>' +
+        '<text class="axis-label" x="' + (w - padR) + '" y="' + (h - 4) + '" text-anchor="end">' + (last.label ? hebrewMonth(last.label) : "") + '</text>' +
+      '</svg>';
+
+    els.chartContainer.innerHTML = svg;
   }
 
   function init(){
