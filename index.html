@@ -125,6 +125,15 @@
     margin-bottom:8px;
   }
   .stock-name-wrap{ display:flex; align-items:center; gap:8px; min-width:0; }
+  .logo{
+    flex:0 0 auto;
+    width:28px; height:28px;
+    border-radius:7px;
+    background:#fff;
+    object-fit:contain;
+    padding:3px;
+  }
+  .name-text{ min-width:0; display:flex; flex-direction:column; }
   .ticker{
     font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:1.05rem;
     color:var(--ink); white-space:nowrap;
@@ -251,10 +260,26 @@
   .gameover .final-value{
     font-size:2rem; font-weight:900; color:var(--gold);
     font-family:'Frank Ruhl Libre',serif;
-    margin:14px 0;
+    margin:14px 0 4px;
+  }
+  .gameover .final-pct{
+    font-size:1.15rem; font-weight:700;
+    font-family:'Frank Ruhl Libre',serif;
+    margin-bottom:18px;
+  }
+  .gameover .final-pct.pos{ color:var(--green); }
+  .gameover .final-pct.neg{ color:var(--red); }
+  .gameover .share-btn{
+    display:inline-flex; align-items:center; justify-content:center;
+    min-height:48px; padding:0 26px;
+    background:#25D366; color:#0b2313;
+    border-radius:10px;
+    font-weight:700; font-size:1rem;
+    text-decoration:none;
   }
   .gameover .restart-btn{
-    margin-top:18px;
+    display:block;
+    margin:16px auto 0;
     min-height:48px; padding:0 24px;
     background:transparent; color:var(--ink);
     border:1px solid var(--card-border); border-radius:10px;
@@ -295,6 +320,10 @@
     <div class="date-row">
       <span>החודש הנוכחי</span>
       <span class="date-val" id="currentDate">—</span>
+    </div>
+    <div class="date-row">
+      <span>התקדמות</span>
+      <span id="monthProgress">חודש 1 מתוך 24</span>
     </div>
   </header>
 
@@ -338,10 +367,12 @@
   </main>
 
   <div id="gameOverScreen" class="gameover">
-    <h2>המשחק הסתיים</h2>
-    <p>הגעת לחודש האחרון בנתונים. הנה שווי הנכסים הסופי שלך:</p>
+    <h2>שנתיים חלפו!</h2>
+    <p>כך הסתיימו 24 חודשי המסחר שלך:</p>
     <div class="final-value" id="finalValue">₪0</div>
-    <button class="restart-btn" id="restartBtn">התחל מחדש</button>
+    <div class="final-pct" id="finalPct">0%</div>
+    <a class="share-btn" id="shareWhatsapp" target="_blank" rel="noopener">שתף בוואטסאפ</a>
+    <button class="restart-btn" id="restartBtn">שחק שוב</button>
   </div>
 
 </div>
@@ -429,12 +460,37 @@
     "COP": "חברת אנרגיה אמריקאית העוסקת בחיפוש והפקת נפט וגז."
   };
 
+  // ---------- Company domains, used to fetch logos via Clearbit's free logo API ----------
+  var LOGO_DOMAINS = {
+    "AAPL":"apple.com", "MSFT":"microsoft.com", "NVDA":"nvidia.com", "GOOGL":"abc.xyz",
+    "AMZN":"amazon.com", "META":"meta.com", "TSLA":"tesla.com", "BRK-B":"berkshirehathaway.com",
+    "AVGO":"broadcom.com", "LLY":"lilly.com", "JPM":"jpmorganchase.com", "V":"visa.com",
+    "UNH":"unitedhealthgroup.com", "XOM":"exxonmobil.com", "MA":"mastercard.com", "HD":"homedepot.com",
+    "PG":"pg.com", "COST":"costco.com", "JNJ":"jnj.com", "MRK":"merck.com",
+    "ABBV":"abbvie.com", "ORCL":"oracle.com", "CVX":"chevron.com", "BAC":"bankofamerica.com",
+    "KO":"coca-cola.com", "PEP":"pepsico.com", "ADBE":"adobe.com", "CRM":"salesforce.com",
+    "NFLX":"netflix.com", "AMD":"amd.com", "TMO":"thermofisher.com", "ACN":"accenture.com",
+    "LIN":"linde.com", "MCD":"mcdonalds.com", "CSCO":"cisco.com", "ABT":"abbott.com",
+    "WMT":"walmart.com", "DIS":"disney.com", "INTC":"intel.com", "TXN":"ti.com",
+    "PM":"pmi.com", "NKE":"nike.com", "QCOM":"qualcomm.com", "IBM":"ibm.com",
+    "GE":"ge.com", "CAT":"caterpillar.com", "UPS":"ups.com", "BA":"boeing.com",
+    "HON":"honeywell.com", "AMGN":"amgen.com", "SBUX":"starbucks.com", "GS":"goldmansachs.com",
+    "MS":"morganstanley.com", "BLK":"blackrock.com", "LOW":"lowes.com", "SPGI":"spglobal.com",
+    "INTU":"intuit.com", "DE":"deere.com", "PLD":"prologis.com", "BKNG":"bookingholdings.com",
+    "ADP":"adp.com", "MDT":"medtronic.com", "GILD":"gilead.com", "CVS":"cvshealth.com",
+    "T":"att.com", "VZ":"verizon.com", "SO":"southerncompany.com", "DUK":"duke-energy.com",
+    "SPY":"ssga.com", "QQQ":"invesco.com", "SMCI":"supermicro.com", "TPL":"texaspacific.com",
+    "INVZ":"innoviz.tech", "PYPL":"paypal.com", "COP":"conocophillips.com"
+  };
+
   var STARTING_CASH = 100000;
   var STOCKS_PER_TURN = 5;
+  var GAME_MONTHS = 24; // the game always runs for a fixed 2-year (24 month) window
 
   var state = {
     data: null,           // parsed market_data.json
     monthIndex: 0,        // index into data.dates
+    startIndex: 0,         // index the current 24-month playthrough started at
     cash: STARTING_CASH,
     turnBaseCash: STARTING_CASH, // cash balance frozen at the start of the current turn (slider 0-100% basis)
     currentPicks: [],      // array of ticker strings shown this turn
@@ -443,6 +499,12 @@
   };
 
   var els = {};
+
+  function pickRandomStartIndex(){
+    var lastPossible = state.data.dates.length - 1 - GAME_MONTHS;
+    if (lastPossible <= 0) return 0;
+    return Math.floor(Math.random() * (lastPossible + 1));
+  }
 
   function fmtMoney(n){
     var sign = n < 0 ? "-" : "";
@@ -511,6 +573,8 @@
 
   function renderTurn(){
     els.currentDate.textContent = hebrewMonth(state.data.dates[state.monthIndex]);
+    var monthsIn = state.monthIndex - state.startIndex + 1;
+    els.monthProgress.textContent = "חודש " + monthsIn + " מתוך " + GAME_MONTHS;
     els.monthBanner.className = "month-banner";
     els.monthBanner.innerHTML = "";
 
@@ -527,14 +591,21 @@
   function buildStockCard(ticker){
     var info = state.data.stocks[ticker];
     var price = priceAt(ticker, state.monthIndex);
+    var domain = LOGO_DOMAINS[ticker];
+    var logoHtml = domain
+      ? '<img class="logo" src="https://logo.clearbit.com/' + domain + '?size=64" alt="" onerror="this.style.display=\'none\'">'
+      : "";
 
     var card = document.createElement("div");
     card.className = "stock-card";
     card.innerHTML =
       '<div class="stock-head">' +
         '<div class="stock-name-wrap">' +
-          '<span class="ticker">' + ticker + '</span>' +
-          '<span class="company">' + escapeHtml(info.name || "") + '</span>' +
+          logoHtml +
+          '<div class="name-text">' +
+            '<span class="ticker">' + ticker + '</span>' +
+            '<span class="company">' + escapeHtml(info.name || "") + '</span>' +
+          '</div>' +
         '</div>' +
         '<button class="info-btn" type="button" aria-label="מידע על ' + ticker + '">?</button>' +
       '</div>' +
@@ -671,8 +742,13 @@
     showMonthBanner(pnl, pnlPct, breakdown);
 
     state.history.push({ label: state.data.dates[nextIdx], value: state.cash });
-
     state.monthIndex = nextIdx;
+
+    if ((state.monthIndex - state.startIndex) >= GAME_MONTHS){
+      endGame();
+      return;
+    }
+
     startNewTurn();
     window.scrollTo({top:0, behavior:"smooth"});
   }
@@ -702,10 +778,22 @@
     document.getElementById("gameRoot").style.display = "none";
     els.gameOverScreen.classList.add("show");
     els.finalValue.textContent = fmtMoney(state.cash);
+
+    var totalPct = round2((state.cash - STARTING_CASH) / STARTING_CASH * 100);
+    var positive = totalPct >= 0;
+    var sign = positive ? "+" : "";
+    els.finalPct.textContent = sign + totalPct.toLocaleString("he-IL", {maximumFractionDigits:2}) + "% תשואה";
+    els.finalPct.className = "final-pct " + (positive ? "pos" : "neg");
+
+    var shareText = "🎮 שיחקתי ב-Be Buffet - שחק אותה כמו באפט! " +
+      "בשנתיים של מסחר סימולציה הרווחתי " + sign + totalPct.toLocaleString("he-IL", {maximumFractionDigits:1}) + "% תשואה. " +
+      "בואו תנסו גם אתם: " + window.location.href;
+    els.shareWhatsapp.href = "https://wa.me/?text=" + encodeURIComponent(shareText);
   }
 
   function restartGame(){
-    state.monthIndex = 0;
+    state.startIndex = pickRandomStartIndex();
+    state.monthIndex = state.startIndex;
     state.cash = STARTING_CASH;
     state.turnBaseCash = STARTING_CASH;
     state.history = [{ label: null, value: STARTING_CASH }];
@@ -716,6 +804,7 @@
 
   function cacheEls(){
     els.currentDate = document.getElementById("currentDate");
+    els.monthProgress = document.getElementById("monthProgress");
     els.cashValue = document.getElementById("cashValue");
     els.investedValue = document.getElementById("investedValue");
     els.netWorthValue = document.getElementById("netWorthValue");
@@ -725,6 +814,8 @@
     els.invalidMsg = document.getElementById("invalidMsg");
     els.gameOverScreen = document.getElementById("gameOverScreen");
     els.finalValue = document.getElementById("finalValue");
+    els.finalPct = document.getElementById("finalPct");
+    els.shareWhatsapp = document.getElementById("shareWhatsapp");
     els.chartContainer = document.getElementById("chartContainer");
     els.chartCurrentValue = document.getElementById("chartCurrentValue");
   }
@@ -787,6 +878,8 @@
           throw new Error("market_data.json אינו תקין או חסר נתונים מספיקים");
         }
         state.data = json;
+        state.startIndex = pickRandomStartIndex();
+        state.monthIndex = state.startIndex;
         document.getElementById("loadingBox").style.display = "none";
         document.getElementById("gameRoot").style.display = "block";
         startNewTurn();
