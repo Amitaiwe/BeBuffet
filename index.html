@@ -308,6 +308,42 @@
     text-align:center; color:var(--ink-dim); padding:60px 20px; line-height:1.7;
   }
   .error-box{ color:var(--red); }
+
+  /* ---------- Intro screen ---------- */
+  .intro-screen{
+    padding:26px 4px 10px;
+  }
+  .intro-screen h2{
+    font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:1.35rem;
+    margin:0 0 14px;
+  }
+  .intro-screen .intro-card{
+    background:var(--bg-elevated);
+    border:1px solid var(--card-border);
+    border-radius:10px;
+    padding:16px 16px 6px;
+    margin-bottom:20px;
+  }
+  .intro-screen .intro-row{
+    display:flex; gap:12px; align-items:flex-start;
+    margin-bottom:16px;
+    font-size:.92rem; line-height:1.6; color:var(--ink-dim);
+  }
+  .intro-screen .intro-num{
+    flex:0 0 auto;
+    width:26px; height:26px; border-radius:50%;
+    background:var(--gold); color:#181206;
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:.9rem;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .intro-screen .intro-row strong{ color:var(--ink); }
+  .intro-screen .start-btn{
+    width:100%; min-height:52px;
+    background:var(--gold); color:#181206;
+    border:none; border-radius:10px;
+    font-family:'Frank Ruhl Libre',serif; font-weight:700; font-size:1.1rem;
+    cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -317,17 +353,48 @@
     <h1>Be Buffet
       <span class="sub">שחק אותה כמו באפט</span>
     </h1>
-    <div class="date-row">
+    <div class="date-row" id="dateRow" style="display:none;">
       <span>החודש הנוכחי</span>
       <span class="date-val" id="currentDate">—</span>
     </div>
-    <div class="date-row">
+    <div class="date-row" id="progressRow" style="display:none;">
       <span>התקדמות</span>
       <span id="monthProgress">חודש 1 מתוך 24</span>
     </div>
   </header>
 
-  <div id="loadingBox" class="loading">טוען נתוני שוק...</div>
+  <div id="introScreen" class="intro-screen">
+    <h2>איך משחקים?</h2>
+    <div class="intro-card">
+      <div class="intro-row">
+        <span class="intro-num">1</span>
+        <span>מתחילים עם <strong>100,000 ₪</strong> מזומן, בנקודת זמן אקראית בהיסטוריה של השוק.</span>
+      </div>
+      <div class="intro-row">
+        <span class="intro-num">2</span>
+        <span>המשחק נמשך <strong>24 חודשים</strong> (שנתיים) של מסחר סימולציה, חודש בכל תור.</span>
+      </div>
+      <div class="intro-row">
+        <span class="intro-num">3</span>
+        <span>בכל חודש מוצגות <strong>5 מניות אקראיות</strong> ומחיריהן. אפשר ללחוץ על "?" כדי לקרוא במה כל חברה עוסקת.</span>
+      </div>
+      <div class="intro-row">
+        <span class="intro-num">4</span>
+        <span>עם הסליידרים בוחרים <strong>כמה אחוזים מהתיק</strong> להשקיע בכל מניה. מה שלא הושקע נשאר כמזומן.</span>
+      </div>
+      <div class="intro-row">
+        <span class="intro-num">5</span>
+        <span>בלחיצה על "חודש הבא" כל ההשקעות נמכרות אוטומטית לפי המחיר החדש, ומוצג הרווח/הפסד של החודש.</span>
+      </div>
+      <div class="intro-row">
+        <span class="intro-num">6</span>
+        <span>המטרה: להגדיל את שווי התיק כמה שיותר עד תום השנתיים, ולשתף את התוצאה שלכם!</span>
+      </div>
+    </div>
+    <button class="start-btn" id="startGameBtn">בואו נתחיל!</button>
+  </div>
+
+  <div id="loadingBox" class="loading" style="display:none;">טוען נתוני שוק...</div>
   <div id="errorBox" class="error-box" style="display:none;"></div>
 
   <main id="gameRoot" style="display:none;">
@@ -593,7 +660,7 @@
     var price = priceAt(ticker, state.monthIndex);
     var domain = LOGO_DOMAINS[ticker];
     var logoHtml = domain
-      ? '<img class="logo" src="https://logo.clearbit.com/' + domain + '?size=64" alt="" onerror="this.style.display=\'none\'">'
+      ? '<img class="logo" src="https://www.google.com/s2/favicons?sz=64&domain=' + domain + '" alt="" onerror="this.style.display=\'none\'">'
       : "";
 
     var card = document.createElement("div");
@@ -868,6 +935,38 @@
     els.nextMonthBtn.addEventListener("click", goToNextMonth);
     document.getElementById("restartBtn").addEventListener("click", restartGame);
 
+    var dataReady = false;
+    var userStarted = false;
+    var dataError = null;
+
+    function enterGameIfReady(){
+      if (!userStarted) return;
+      if (dataError){
+        document.getElementById("loadingBox").style.display = "none";
+        var box = document.getElementById("errorBox");
+        box.style.display = "block";
+        box.textContent = dataError;
+        return;
+      }
+      if (!dataReady){
+        document.getElementById("loadingBox").style.display = "block";
+        return;
+      }
+      document.getElementById("loadingBox").style.display = "none";
+      document.getElementById("dateRow").style.display = "flex";
+      document.getElementById("progressRow").style.display = "flex";
+      document.getElementById("gameRoot").style.display = "block";
+      state.startIndex = pickRandomStartIndex();
+      state.monthIndex = state.startIndex;
+      startNewTurn();
+    }
+
+    document.getElementById("startGameBtn").addEventListener("click", function(){
+      userStarted = true;
+      document.getElementById("introScreen").style.display = "none";
+      enterGameIfReady();
+    });
+
     fetch("market_data.json")
       .then(function(res){
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -878,18 +977,13 @@
           throw new Error("market_data.json אינו תקין או חסר נתונים מספיקים");
         }
         state.data = json;
-        state.startIndex = pickRandomStartIndex();
-        state.monthIndex = state.startIndex;
-        document.getElementById("loadingBox").style.display = "none";
-        document.getElementById("gameRoot").style.display = "block";
-        startNewTurn();
+        dataReady = true;
+        enterGameIfReady();
       })
       .catch(function(err){
-        document.getElementById("loadingBox").style.display = "none";
-        var box = document.getElementById("errorBox");
-        box.style.display = "block";
-        box.textContent = "שגיאה בטעינת נתוני השוק (market_data.json): " + err.message +
+        dataError = "שגיאה בטעינת נתוני השוק (market_data.json): " + err.message +
           ". ודא שהקובץ נמצא באותה תיקייה כמו קובץ ה-HTML.";
+        enterGameIfReady();
       });
   }
 
